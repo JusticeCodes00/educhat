@@ -16,7 +16,7 @@ const storage = multer.diskStorage({
 });
 
 // Create multer upload middleware
-const upload = multer({
+const upload = process.env.NODE_ENV === "development" ? multer({storage: multer.memoryStorage()}) : multer({
     storage: storage,
     limits: {
         fileSize: 10 * 1024 * 1024 // 10MB limit
