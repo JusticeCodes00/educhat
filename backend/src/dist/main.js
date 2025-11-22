@@ -48364,11 +48364,7 @@ class MainView {
     // REMOVE the old templateCreateGroupModal method
     // REPLACE WITH this new one:
 
-    templateCreateGroupModal() {
-        const students = utils_appStore.getAuthUser().role === 'Lecturer'
-            ? utils_appStore.getContacts()
-            : [];
-
+    templateCreateGroupModalWithStudents(students) {
         return `
       <div class="modal-overlay">
         <div class="modal-content group-create-modal">
@@ -48500,7 +48496,7 @@ class MainView {
                     <div class="no-members">
                       <i data-lucide="user-x"></i>
                       <p>No students available</p>
-                      <small>Add students to your contacts first</small>
+                      <small>Students need to register first</small>
                     </div>
                   `}
                 </div>
@@ -48570,194 +48566,212 @@ class MainView {
     `;
     }
 
+    async showCreateGroupModal() {
+        try {
+            // FETCH ALL STUDENTS - not just contacts
+            const studentsRes = await axiosInstance.get("/student");
+            const allStudents = studentsRes.data;
 
-    showCreateGroupModal() {
-        const modalDiv = document.createElement("div");
-        modalDiv.innerHTML = this.templateCreateGroupModal();
+            console.log('All students:', allStudents); // Debug log
 
-        let currentStep = 1;
-        const totalSteps = 3;
+            const modalDiv = document.createElement("div");
+            modalDiv.innerHTML = this.templateCreateGroupModalWithStudents(allStudents);
 
-        // Get form elements
-        const form = modalDiv.querySelector(".create-group-form");
-        const prevBtn = modalDiv.querySelector(".btn-prev");
-        const nextBtn = modalDiv.querySelector(".btn-next");
-        const submitBtn = modalDiv.querySelector(".btn-submit");
-        const nameInput = modalDiv.querySelector("#group-name");
-        const descInput = modalDiv.querySelector("#group-description");
-        const memberSearch = modalDiv.querySelector(".member-search-input");
-        const clearSearchBtn = modalDiv.querySelector(".clear-member-search");
+            let currentStep = 1;
+            const totalSteps = 3;
 
-        // Character counters
-        const updateCharCount = (input, countElem) => {
-            const count = input.value.length;
-            const max = input.maxLength;
-            countElem.textContent = `${count}/${max} characters`;
-        };
+            // Get form elements
+            const form = modalDiv.querySelector(".create-group-form");
+            const prevBtn = modalDiv.querySelector(".btn-prev");
+            const nextBtn = modalDiv.querySelector(".btn-next");
+            const submitBtn = modalDiv.querySelector(".btn-submit");
+            const nameInput = modalDiv.querySelector("#group-name");
+            const descInput = modalDiv.querySelector("#group-description");
+            const memberSearch = modalDiv.querySelector(".member-search-input");
+            const clearSearchBtn = modalDiv.querySelector(".clear-member-search");
 
-        nameInput?.addEventListener('input', (e) => {
-            const countElem = e.target.parentElement.querySelector('.char-count');
-            updateCharCount(e.target, countElem);
-        });
+            // Character counters
+            const updateCharCount = (input, countElem) => {
+                const count = input.value.length;
+                const max = input.maxLength;
+                countElem.textContent = `${count}/${max} characters`;
+            };
 
-        descInput?.addEventListener('input', (e) => {
-            const countElem = e.target.parentElement.querySelector('.char-count');
-            updateCharCount(e.target, countElem);
-        });
-
-        // Member search functionality
-        memberSearch?.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase().trim();
-            clearSearchBtn.style.display = searchTerm ? 'flex' : 'none';
-
-            const memberCards = modalDiv.querySelectorAll('.member-card');
-            memberCards.forEach(card => {
-                const name = card.querySelector('.member-name').textContent.toLowerCase();
-                card.style.display = name.includes(searchTerm) ? '' : 'none';
-            });
-        });
-
-        clearSearchBtn?.addEventListener('click', () => {
-            memberSearch.value = '';
-            clearSearchBtn.style.display = 'none';
-            modalDiv.querySelectorAll('.member-card').forEach(card => {
-                card.style.display = '';
-            });
-        });
-
-        // Select/Deselect All
-        modalDiv.querySelector('.select-all')?.addEventListener('click', () => {
-            const visibleCheckboxes = Array.from(modalDiv.querySelectorAll('.member-card'))
-                .filter(card => card.style.display !== 'none')
-                .map(card => card.querySelector('input[type="checkbox"]'));
-
-            visibleCheckboxes.forEach(cb => cb.checked = true);
-            updateSelectedCount();
-        });
-
-        modalDiv.querySelector('.deselect-all')?.addEventListener('click', () => {
-            modalDiv.querySelectorAll('input[name="members"]').forEach(cb => cb.checked = false);
-            updateSelectedCount();
-        });
-
-        // Update selected count
-        const updateSelectedCount = () => {
-            const count = modalDiv.querySelectorAll('input[name="members"]:checked').length;
-            const countElem = modalDiv.querySelector('.selected-count .count');
-            if (countElem) countElem.textContent = count;
-        };
-
-        modalDiv.querySelectorAll('input[name="members"]').forEach(cb => {
-            cb.addEventListener('change', updateSelectedCount);
-        });
-
-        // Step navigation
-        const showStep = (step) => {
-            // Update step indicator
-            modalDiv.querySelectorAll('.step').forEach((s, index) => {
-                s.classList.toggle('active', index + 1 <= step);
-                s.classList.toggle('completed', index + 1 < step);
+            nameInput?.addEventListener('input', (e) => {
+                const countElem = e.target.parentElement.querySelector('.char-count');
+                updateCharCount(e.target, countElem);
             });
 
-            // Update form steps
-            modalDiv.querySelectorAll('.form-step').forEach((s, index) => {
-                s.classList.toggle('active', index + 1 === step);
+            descInput?.addEventListener('input', (e) => {
+                const countElem = e.target.parentElement.querySelector('.char-count');
+                updateCharCount(e.target, countElem);
             });
 
-            // Update buttons
-            prevBtn.style.display = step === 1 ? 'none' : 'flex';
-            nextBtn.style.display = step === totalSteps ? 'none' : 'flex';
-            submitBtn.style.display = step === totalSteps ? 'flex' : 'none';
+            // Member search functionality
+            memberSearch?.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase().trim();
+                clearSearchBtn.style.display = searchTerm ? 'flex' : 'none';
 
-            // Update review on step 3
-            if (step === 3) {
-                updateReview();
-            }
-        };
+                const memberCards = modalDiv.querySelectorAll('.member-card');
+                memberCards.forEach(card => {
+                    const name = card.querySelector('.member-name').textContent.toLowerCase();
+                    card.style.display = name.includes(searchTerm) ? '' : 'none';
+                });
+            });
 
-        // Update review summary
-        const updateReview = () => {
-            const name = nameInput.value || '-';
-            const description = descInput.value || 'No description';
-            const selectedMembers = Array.from(modalDiv.querySelectorAll('input[name="members"]:checked'));
+            clearSearchBtn?.addEventListener('click', () => {
+                memberSearch.value = '';
+                clearSearchBtn.style.display = 'none';
+                modalDiv.querySelectorAll('.member-card').forEach(card => {
+                    card.style.display = '';
+                });
+            });
 
-            modalDiv.querySelector('.review-name').textContent = name;
-            modalDiv.querySelector('.review-description').textContent = description;
-            modalDiv.querySelector('.review-members').textContent =
-                `${selectedMembers.length} member${selectedMembers.length !== 1 ? 's' : ''} selected`;
+            // Select/Deselect All
+            modalDiv.querySelector('.select-all')?.addEventListener('click', () => {
+                const visibleCheckboxes = Array.from(modalDiv.querySelectorAll('.member-card'))
+                    .filter(card => card.style.display !== 'none')
+                    .map(card => card.querySelector('input[type="checkbox"]'));
 
-            // Show avatars
-            const avatarsContainer = modalDiv.querySelector('.review-avatars');
-            avatarsContainer.innerHTML = selectedMembers.slice(0, 5).map(cb => {
-                const card = cb.closest('.member-card');
-                const img = card.querySelector('img').src;
-                return `<img src="${img}" alt="Member" />`;
-            }).join('');
+                visibleCheckboxes.forEach(cb => cb.checked = true);
+                updateSelectedCount();
+            });
 
-            if (selectedMembers.length > 5) {
-                avatarsContainer.innerHTML += `<div class="more-count">+${selectedMembers.length - 5}</div>`;
-            }
-        };
+            modalDiv.querySelector('.deselect-all')?.addEventListener('click', () => {
+                modalDiv.querySelectorAll('input[name="members"]').forEach(cb => cb.checked = false);
+                updateSelectedCount();
+            });
 
-        // Navigation handlers
-        nextBtn.addEventListener('click', () => {
-            // Validate current step
-            if (currentStep === 1) {
-                if (!nameInput.value.trim()) {
-                    nameInput.focus();
-                    toast.error('Please enter a group name');
-                    return;
+            // Update selected count
+            const updateSelectedCount = () => {
+                const count = modalDiv.querySelectorAll('input[name="members"]:checked').length;
+                const countElem = modalDiv.querySelector('.selected-count .count');
+                if (countElem) countElem.textContent = count;
+            };
+
+            modalDiv.querySelectorAll('input[name="members"]').forEach(cb => {
+                cb.addEventListener('change', updateSelectedCount);
+            });
+
+            // Step navigation
+            const showStep = (step) => {
+                // Update step indicator
+                modalDiv.querySelectorAll('.step').forEach((s, index) => {
+                    s.classList.toggle('active', index + 1 <= step);
+                    s.classList.toggle('completed', index + 1 < step);
+                });
+
+                // Update form steps
+                modalDiv.querySelectorAll('.form-step').forEach((s, index) => {
+                    s.classList.toggle('active', index + 1 === step);
+                });
+
+                // Update buttons
+                prevBtn.style.display = step === 1 ? 'none' : 'flex';
+                nextBtn.style.display = step === totalSteps ? 'none' : 'flex';
+                submitBtn.style.display = step === totalSteps ? 'flex' : 'none';
+
+                // Update review on step 3
+                if (step === 3) {
+                    updateReview();
                 }
-            }
+            };
 
-            if (currentStep < totalSteps) {
-                currentStep++;
-                showStep(currentStep);
-            }
-        });
+            // Update review summary
+            const updateReview = () => {
+                const name = nameInput.value || '-';
+                const description = descInput.value || 'No description';
+                const selectedMembers = Array.from(modalDiv.querySelectorAll('input[name="members"]:checked'));
 
-        prevBtn.addEventListener('click', () => {
-            if (currentStep > 1) {
-                currentStep--;
-                showStep(currentStep);
-            }
-        });
+                modalDiv.querySelector('.review-name').textContent = name;
+                modalDiv.querySelector('.review-description').textContent = description;
+                modalDiv.querySelector('.review-members').textContent =
+                    `${selectedMembers.length} member${selectedMembers.length !== 1 ? 's' : ''} selected`;
 
-        // Close modal
-        modalDiv.querySelector(".close-modal").addEventListener("click", () => {
-            modalDiv.remove();
-        });
+                // Show avatars
+                const avatarsContainer = modalDiv.querySelector('.review-avatars');
+                avatarsContainer.innerHTML = selectedMembers.slice(0, 5).map(cb => {
+                    const card = cb.closest('.member-card');
+                    const img = card.querySelector('img').src;
+                    return `<img src="${img}" alt="Member" />`;
+                }).join('');
 
-        modalDiv.querySelector(".modal-overlay").addEventListener("click", (e) => {
-            if (e.target.classList.contains("modal-overlay")) {
+                if (selectedMembers.length > 5) {
+                    avatarsContainer.innerHTML += `<div class="more-count">+${selectedMembers.length - 5}</div>`;
+                }
+            };
+
+            // Navigation handlers
+            nextBtn.addEventListener('click', () => {
+                if (currentStep === 1) {
+                    if (!nameInput.value.trim()) {
+                        nameInput.focus();
+                        toast.error('Please enter a group name');
+                        return;
+                    }
+                }
+
+                if (currentStep < totalSteps) {
+                    currentStep++;
+                    showStep(currentStep);
+                }
+            });
+
+            prevBtn.addEventListener('click', () => {
+                if (currentStep > 1) {
+                    currentStep--;
+                    showStep(currentStep);
+                }
+            });
+
+            // Close modal
+            modalDiv.querySelector(".close-modal").addEventListener("click", () => {
                 if (confirm('Are you sure? Your changes will be lost.')) {
                     modalDiv.remove();
                 }
-            }
-        });
+            });
 
-        // Form submission
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault();
+            modalDiv.querySelector(".modal-overlay").addEventListener("click", (e) => {
+                if (e.target.classList.contains("modal-overlay")) {
+                    if (confirm('Are you sure? Your changes will be lost.')) {
+                        modalDiv.remove();
+                    }
+                }
+            });
 
-            const selectedMembers = Array.from(modalDiv.querySelectorAll('input[name="members"]:checked'));
+            // Form submission
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
 
-            if (selectedMembers.length === 0) {
-                toast.error('Please select at least one member');
-                currentStep = 2;
-                showStep(currentStep);
-                return;
-            }
+                const selectedMembers = Array.from(modalDiv.querySelectorAll('input[name="members"]:checked'));
 
-            // Disable submit button
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i data-lucide="loader"></i> Creating...';
+                if (selectedMembers.length === 0) {
+                    toast.error('Please select at least one member');
+                    currentStep = 2;
+                    showStep(currentStep);
+                    return;
+                }
 
-            await this.createGroup(form, modalDiv);
-        });
+                submitBtn.disabled = true;
+                const originalHTML = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i data-lucide="loader"></i> Creating...';
+                createIcons({ icons: iconsAndAliases_namespaceObject });
 
-        document.body.appendChild(modalDiv);
-        createIcons({ icons: iconsAndAliases_namespaceObject });
+                try {
+                    await this.createGroup(form, modalDiv);
+                } catch (err) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalHTML;
+                    createIcons({ icons: iconsAndAliases_namespaceObject });
+                }
+            });
+
+            document.body.appendChild(modalDiv);
+            createIcons({ icons: iconsAndAliases_namespaceObject });
+        } catch (err) {
+            console.error('Error loading students:', err);
+            toast.error('Failed to load students');
+        }
     }
 
     templateGroupInfoModal(group) {
@@ -49750,206 +49764,6 @@ class MainView {
         }
     }
 
-
-    showCreateGroupModal() {
-        const modalDiv = document.createElement("div");
-        modalDiv.innerHTML = this.templateCreateGroupModal();
-
-        let currentStep = 1;
-        const totalSteps = 3;
-
-        // Get form elements
-        const form = modalDiv.querySelector(".create-group-form");
-        const prevBtn = modalDiv.querySelector(".btn-prev");
-        const nextBtn = modalDiv.querySelector(".btn-next");
-        const submitBtn = modalDiv.querySelector(".btn-submit");
-        const nameInput = modalDiv.querySelector("#group-name");
-        const descInput = modalDiv.querySelector("#group-description");
-        const memberSearch = modalDiv.querySelector(".member-search-input");
-        const clearSearchBtn = modalDiv.querySelector(".clear-member-search");
-
-        // Character counters
-        const updateCharCount = (input, countElem) => {
-            const count = input.value.length;
-            const max = input.maxLength;
-            countElem.textContent = `${count}/${max} characters`;
-        };
-
-        nameInput?.addEventListener('input', (e) => {
-            const countElem = e.target.parentElement.querySelector('.char-count');
-            updateCharCount(e.target, countElem);
-        });
-
-        descInput?.addEventListener('input', (e) => {
-            const countElem = e.target.parentElement.querySelector('.char-count');
-            updateCharCount(e.target, countElem);
-        });
-
-        // Member search functionality
-        memberSearch?.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase().trim();
-            clearSearchBtn.style.display = searchTerm ? 'flex' : 'none';
-
-            const memberCards = modalDiv.querySelectorAll('.member-card');
-            memberCards.forEach(card => {
-                const name = card.querySelector('.member-name').textContent.toLowerCase();
-                card.style.display = name.includes(searchTerm) ? '' : 'none';
-            });
-        });
-
-        clearSearchBtn?.addEventListener('click', () => {
-            memberSearch.value = '';
-            clearSearchBtn.style.display = 'none';
-            modalDiv.querySelectorAll('.member-card').forEach(card => {
-                card.style.display = '';
-            });
-        });
-
-        // Select/Deselect All
-        modalDiv.querySelector('.select-all')?.addEventListener('click', () => {
-            const visibleCheckboxes = Array.from(modalDiv.querySelectorAll('.member-card'))
-                .filter(card => card.style.display !== 'none')
-                .map(card => card.querySelector('input[type="checkbox"]'));
-
-            visibleCheckboxes.forEach(cb => cb.checked = true);
-            updateSelectedCount();
-        });
-
-        modalDiv.querySelector('.deselect-all')?.addEventListener('click', () => {
-            modalDiv.querySelectorAll('input[name="members"]').forEach(cb => cb.checked = false);
-            updateSelectedCount();
-        });
-
-        // Update selected count
-        const updateSelectedCount = () => {
-            const count = modalDiv.querySelectorAll('input[name="members"]:checked').length;
-            const countElem = modalDiv.querySelector('.selected-count .count');
-            if (countElem) countElem.textContent = count;
-        };
-
-        modalDiv.querySelectorAll('input[name="members"]').forEach(cb => {
-            cb.addEventListener('change', updateSelectedCount);
-        });
-
-        // Step navigation
-        const showStep = (step) => {
-            // Update step indicator
-            modalDiv.querySelectorAll('.step').forEach((s, index) => {
-                s.classList.toggle('active', index + 1 <= step);
-                s.classList.toggle('completed', index + 1 < step);
-            });
-
-            // Update form steps
-            modalDiv.querySelectorAll('.form-step').forEach((s, index) => {
-                s.classList.toggle('active', index + 1 === step);
-            });
-
-            // Update buttons
-            prevBtn.style.display = step === 1 ? 'none' : 'flex';
-            nextBtn.style.display = step === totalSteps ? 'none' : 'flex';
-            submitBtn.style.display = step === totalSteps ? 'flex' : 'none';
-
-            // Update review on step 3
-            if (step === 3) {
-                updateReview();
-            }
-        };
-
-        // Update review summary
-        const updateReview = () => {
-            const name = nameInput.value || '-';
-            const description = descInput.value || 'No description';
-            const selectedMembers = Array.from(modalDiv.querySelectorAll('input[name="members"]:checked'));
-
-            modalDiv.querySelector('.review-name').textContent = name;
-            modalDiv.querySelector('.review-description').textContent = description;
-            modalDiv.querySelector('.review-members').textContent =
-                `${selectedMembers.length} member${selectedMembers.length !== 1 ? 's' : ''} selected`;
-
-            // Show avatars
-            const avatarsContainer = modalDiv.querySelector('.review-avatars');
-            avatarsContainer.innerHTML = selectedMembers.slice(0, 5).map(cb => {
-                const card = cb.closest('.member-card');
-                const img = card.querySelector('img').src;
-                return `<img src="${img}" alt="Member" />`;
-            }).join('');
-
-            if (selectedMembers.length > 5) {
-                avatarsContainer.innerHTML += `<div class="more-count">+${selectedMembers.length - 5}</div>`;
-            }
-        };
-
-        // Navigation handlers
-        nextBtn.addEventListener('click', () => {
-            // Validate current step
-            if (currentStep === 1) {
-                if (!nameInput.value.trim()) {
-                    nameInput.focus();
-                    toast.error('Please enter a group name');
-                    return;
-                }
-            }
-
-            if (currentStep < totalSteps) {
-                currentStep++;
-                showStep(currentStep);
-            }
-        });
-
-        prevBtn.addEventListener('click', () => {
-            if (currentStep > 1) {
-                currentStep--;
-                showStep(currentStep);
-            }
-        });
-
-        // Close modal
-        modalDiv.querySelector(".close-modal").addEventListener("click", () => {
-            if (confirm('Are you sure? Your changes will be lost.')) {
-                modalDiv.remove();
-            }
-        });
-
-        modalDiv.querySelector(".modal-overlay").addEventListener("click", (e) => {
-            if (e.target.classList.contains("modal-overlay")) {
-                if (confirm('Are you sure? Your changes will be lost.')) {
-                    modalDiv.remove();
-                }
-            }
-        });
-
-        // Form submission
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-
-            const selectedMembers = Array.from(modalDiv.querySelectorAll('input[name="members"]:checked'));
-
-            if (selectedMembers.length === 0) {
-                toast.error('Please select at least one member');
-                currentStep = 2;
-                showStep(currentStep);
-                return;
-            }
-
-            // Disable submit button
-            submitBtn.disabled = true;
-            const originalHTML = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i data-lucide="loader"></i> Creating...';
-            createIcons({ icons: iconsAndAliases_namespaceObject }); // Re-render the loader icon
-
-            try {
-                await this.createGroup(form, modalDiv);
-            } catch (err) {
-                // Re-enable button on error
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalHTML;
-                createIcons({ icons: iconsAndAliases_namespaceObject });
-            }
-        });
-
-        document.body.appendChild(modalDiv);
-        createIcons({ icons: iconsAndAliases_namespaceObject });
-    }
 
     async createGroup(form, modalDiv) {
         try {

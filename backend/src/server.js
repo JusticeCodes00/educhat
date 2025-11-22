@@ -64,10 +64,10 @@ app.use("/api/groups", groupRoutes);  // ADD THIS
 app.use("/api/notifications", notificationRoutes);  // ADD THIS
 
 if (process.env.NODE_ENV === "production") {
-    app.use(express.static(path.join(__dirname, "../frontend/dist")));
+    app.use(express.static(path.join(__dirname, "/src/dist")));
 
     app.get("*", (_, res) => {
-        res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+        res.sendFile(path.join(__dirname, "index.html"));
     });
 }
 
