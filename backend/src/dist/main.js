@@ -6499,10 +6499,14 @@ axios.default = axios;
 ;// ./src/utils/axios.js
 
 
+const API_URL =
+   true ? "/api" : 0;
+
 const axiosInstance = lib_axios.create({
-    baseURL: "http://localhost:5000/api",
-    withCredentials: true,
-})
+  baseURL: API_URL,
+  withCredentials: true,
+});
+
 ;// ./src/components/toast.js
 class Toast {
     constructor() {
@@ -47123,7 +47127,15 @@ Object.assign(esm_lookup, {
 ;// ./src/utils/socket.js
 
 
-const socket = esm_lookup("http://localhost:5000", {withCredentials: true})
+const SOCKET_URL =
+   true
+    ? window.location.origin
+    : 0;
+
+const socket = esm_lookup(SOCKET_URL, {
+  withCredentials: true,
+  transports: ["websocket", "polling"],
+});
 
 ;// ./src/components/MainView.js
 

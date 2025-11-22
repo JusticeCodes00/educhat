@@ -1,0 +1,25 @@
+{
+  "name": "educhat",
+  "version": "1.0.0",
+  "description": "A real time messaging system for departmental communication.",
+  "main": "index.js",
+  "scripts": {
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "build:frontend": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "postinstall": "npm run install:backend && npm run install:frontend && npm run build:frontend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JusticeCodes00/educhat.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/JusticeCodes00/educhat/issues"
+  },
+  "homepage": "https://github.com/JusticeCodes00/educhat#readme"
+}
