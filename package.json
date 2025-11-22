@@ -4,9 +4,9 @@
   "description": "A real time messaging system for departmental communication.",
   "main": "index.js",
   "scripts": {
-    "install:backend": "cd backend && npm install",
-    "install:frontend": "cd frontend && npm install",
-    "build:frontend": "cd frontend && npm run build",
+    "install:backend": "cd backend && npm ci",
+    "install:frontend": "cd frontend && npm ci",
+    "build:frontend": "cd frontend && npx webpack --config webpack.prod.js",
     "start": "cd backend && npm start",
     "postinstall": "npm run install:backend && npm run install:frontend && npm run build:frontend"
   },
