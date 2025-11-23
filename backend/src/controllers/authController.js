@@ -136,25 +136,31 @@ export const loginLecturer = async (req, res) => {
 
         generateToken(lecturer._id, res);
 
-        res.status(200).json({
-            id: lecturer._id,
-            fullName: lecturer.fullName,
-            role: lecturer.role,
-            staffId: lecturer.staffId,
-            courses: lecturer.courses,
-            profilePic: lecturer.profilePic,
-        });
+       res.status(200).json({
+         id: lecturer._id,
+         fullname: lecturer.fullname, // ⭐ Changed from fullName to fullname
+         role: lecturer.role,
+         staffId: lecturer.staffId,
+         courses: lecturer.courses,
+         department: lecturer.department, // ⭐ Added department
+         profilePic: lecturer.profilePic,
+       });
     } catch (err) {
         console.error("Error in loginLecturer:", err);
         res.status(500).json({ message: "Server error" });
     }
 };
 
-export const logout = (_, res) => {
-    res.cookie("jwt", "", { maxAge: 0 });
-    res.status(200).json({ message: "Logged out successfully" });
-}
-
+export const logout = (req, res) => {
+  res.cookie("jwt", "", {
+    maxAge: 0,
+    httpOnly: true,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: true,
+    path: "/",
+  });
+  res.status(200).json({ message: "Logged out successfully" });
+};
 // ======================= GET CURRENT USER =======================
 export const me = (req, res) => {
     try {

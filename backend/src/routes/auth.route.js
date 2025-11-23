@@ -8,7 +8,7 @@ router.post('/registerLecturer', registerLecturer);
 router.post('/loginLecturer', loginLecturer);
 router.post('/registerStudent', registerStudent);
 router.post('/loginStudent', loginStudent);
-router.post("/logOut", logout)
+router.post("/logout", logout)
 router.get('/me', protect, me);
 router.put("/updateProfilePic", protect, updateProfilePic)
 
