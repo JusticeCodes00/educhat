@@ -64,6 +64,23 @@ app.use("/api/messages", messagesRoutes);
 app.use("/api/groups", groupRoutes); // ADD THIS
 app.use("/api/notifications", notificationRoutes); // ADD THIS
 
+// Health check endpoints
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok',
+    message: 'Educhat API is running!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'healthy',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
 // if (process.env.NODE_ENV === "production") {
 //   app.use(express.static(path.join(__dirname, "/src/dist")));
 
